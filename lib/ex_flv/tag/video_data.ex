@@ -18,7 +18,7 @@ defmodule ExFLV.Tag.VideoData do
   @type t :: %__MODULE__{
           frame_type: frame_type(),
           codec_id: codec_id(),
-          data: binary()
+          data: iodata() | AVCVideoPacket.t()
         }
 
   defstruct [:frame_type, :codec_id, :data]
@@ -35,6 +35,9 @@ defmodule ExFLV.Tag.VideoData do
     }
   end
 
+  @doc """
+  Parses the binary into a `VIDEODATA` tag.
+  """
   @spec parse(binary()) :: t()
   def parse(<<frame_type::4, codec_id::4, data::binary>>) do
     codec = parse_codec_id(codec_id)

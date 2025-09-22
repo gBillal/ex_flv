@@ -28,7 +28,7 @@ defmodule ExFLV.Tag.AudioData do
           sound_rate: non_neg_integer(),
           sound_size: non_neg_integer(),
           sound_type: sound_type(),
-          data: binary()
+          data: iodata() | AACAudioData.t()
         }
 
   defstruct [:sound_format, :sound_rate, :sound_size, :sound_type, :data]
@@ -65,6 +65,9 @@ defmodule ExFLV.Tag.AudioData do
     }
   end
 
+  @doc """
+  Parses the binary into an `AUDIODATA` tag.
+  """
   @spec parse(binary()) :: t()
   def parse(<<sound_format::4, sound_rate::2, sound_size::1, sound_type::1, data::binary>>) do
     format = Map.fetch!(@sound_format_map, sound_format)

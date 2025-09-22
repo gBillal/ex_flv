@@ -1,6 +1,6 @@
 defmodule ExFLV.Tag.AVCVideoPacket do
   @moduledoc """
-  Module describing an AVCVIDEOPACKET.
+  Module describing an `AVCVIDEOPACKET` tag.
   """
 
   @type packet_type :: :sequence_header | :nalu | :end_of_sequence
@@ -8,7 +8,7 @@ defmodule ExFLV.Tag.AVCVideoPacket do
   @type t :: %__MODULE__{
           packet_type: packet_type(),
           composition_time: integer(),
-          data: binary()
+          data: iodata()
         }
 
   defstruct [:packet_type, :composition_time, :data]
@@ -25,8 +25,11 @@ defmodule ExFLV.Tag.AVCVideoPacket do
     }
   end
 
+  @doc """
+  Parses the binary into an `AVCVIDEOPACKET` tag.
+  """
   @spec parse(binary()) :: t()
-  def parse(<<packet_type::8, composition_time::24-signed, data::binary>>) do
+  def parse(<<packet_type::8, composition_time::24-signed, data::binary>> = _tag) do
     %__MODULE__{
       packet_type: parse_packet_type(packet_type),
       composition_time: composition_time,
