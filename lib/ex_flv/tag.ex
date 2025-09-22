@@ -7,7 +7,7 @@ defmodule ExFLV.Tag do
 
   @type t :: %__MODULE__{
           type: :audio | :video | :script,
-          data_size: non_neg_integer(),
+          data_size: non_neg_integer() | nil,
           timestamp: non_neg_integer(),
           data: iodata() | AudioData.t() | VideoData.t()
         }
