@@ -68,7 +68,7 @@ defmodule ExFLV.Tag.AudioData do
   @doc """
   Parses the binary into an `AUDIODATA` tag.
   """
-  @spec parse(binary()) :: t()
+  @spec parse(binary()) :: {:ok, t()} | {:error, any()}
   def parse(<<sound_format::4, sound_rate::2, sound_size::1, sound_type::1, data::binary>>) do
     format = Map.fetch!(@sound_format_map, sound_format)
 
@@ -78,13 +78,27 @@ defmodule ExFLV.Tag.AudioData do
         _ -> data
       end
 
-    %__MODULE__{
-      sound_format: format,
-      sound_rate: sound_rate,
-      sound_size: sound_size,
-      sound_type: parse_sound_type(sound_type),
-      data: data
-    }
+    {:ok,
+     %__MODULE__{
+       sound_format: format,
+       sound_rate: sound_rate,
+       sound_size: sound_size,
+       sound_type: parse_sound_type(sound_type),
+       data: data
+     }}
+  end
+
+  def parse(_), do: {:error, :not_enough_data}
+
+  @doc """
+  Same as `parse/1` but raises on error.
+  """
+  @spec parse!(binary()) :: t()
+  def parse!(data) do
+    case parse(data) do
+      {:ok, tag} -> tag
+      {:error, reason} -> raise "Failed to parse AUDIODATA: #{inspect(reason)}"
+    end
   end
 
   defp parse_sound_type(0), do: :mono
