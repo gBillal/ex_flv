@@ -3,7 +3,7 @@ defmodule ExFLV.Tag.AudioData do
   Module describing flv AUDIODATA.
   """
 
-  alias ExFLV.Tag.AACAudioData
+  alias ExFLV.Tag.AudioData.AAC
 
   @type sound_format ::
           :pcm
@@ -28,7 +28,7 @@ defmodule ExFLV.Tag.AudioData do
           sound_rate: non_neg_integer(),
           sound_size: non_neg_integer(),
           sound_type: sound_type(),
-          data: iodata() | AACAudioData.t()
+          data: iodata() | AAC.t()
         }
 
   defstruct [:sound_format, :sound_rate, :sound_size, :sound_type, :data]
@@ -72,20 +72,16 @@ defmodule ExFLV.Tag.AudioData do
   def parse(<<sound_format::4, sound_rate::2, sound_size::1, sound_type::1, data::binary>>) do
     format = Map.fetch!(@sound_format_map, sound_format)
 
-    data =
-      case format do
-        :aac -> AACAudioData.parse(data)
-        _ -> data
-      end
-
-    {:ok,
-     %__MODULE__{
-       sound_format: format,
-       sound_rate: sound_rate,
-       sound_size: sound_size,
-       sound_type: parse_sound_type(sound_type),
-       data: data
-     }}
+    with {:ok, payload} <- parse_payload(format, data) do
+      {:ok,
+       %__MODULE__{
+         sound_format: format,
+         sound_rate: sound_rate,
+         sound_size: sound_size,
+         sound_type: parse_sound_type(sound_type),
+         data: payload
+       }}
+    end
   end
 
   def parse(_), do: {:error, :not_enough_data}
@@ -103,6 +99,9 @@ defmodule ExFLV.Tag.AudioData do
 
   defp parse_sound_type(0), do: :mono
   defp parse_sound_type(1), do: :stereo
+
+  defp parse_payload(:aac, data), do: AAC.parse(data)
+  defp parse_payload(_, data), do: {:ok, data}
 
   defimpl ExFLV.Tag.Serializer do
     alias ExFLV.Tag.Serializer
@@ -122,7 +121,7 @@ defmodule ExFLV.Tag.AudioData do
       ]
     end
 
-    defp serialize_data(%AACAudioData{} = aac_data), do: Serializer.serialize(aac_data)
+    defp serialize_data(%AAC{} = aac_data), do: Serializer.serialize(aac_data)
     defp serialize_data(data), do: data
 
     defp serialize_sound_type(:mono), do: 0
