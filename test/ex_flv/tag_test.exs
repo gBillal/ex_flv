@@ -15,7 +15,7 @@ defmodule ExFLV.TagTest do
     tag = %ExFLV.Tag{type: :audio, timestamp: 0, data: data}
     serialized = ExFLV.Tag.serialize(tag)
 
-    assert {%ExFLV.Tag{type: :audio, timestamp: 0, data: ^data}, <<>>} =
+    assert {:ok, %ExFLV.Tag{type: :audio, timestamp: 0, data: ^data}} =
              ExFLV.Tag.parse(IO.iodata_to_binary(serialized))
   end
 
@@ -28,7 +28,7 @@ defmodule ExFLV.TagTest do
     tag = %ExFLV.Tag{type: :video, timestamp: 1_000, data: data}
     serialized = ExFLV.Tag.serialize(tag)
 
-    assert {%ExFLV.Tag{type: :video, timestamp: 1_000, data: ^data}, <<>>} =
+    assert {:ok, %ExFLV.Tag{type: :video, timestamp: 1_000, data: ^data}} =
              ExFLV.Tag.parse(IO.iodata_to_binary(serialized))
   end
 end

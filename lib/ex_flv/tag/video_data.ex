@@ -13,7 +13,13 @@ defmodule ExFLV.Tag.VideoData do
           | :command_frame
 
   @type codec_id ::
-          :jpeg | :sorenson_h263 | :screen_video | :vp6 | :vp6_alpha | :screen_video_v2 | :avc
+          :jpeg
+          | :sorenson_h263
+          | :screen_video
+          | :vp6
+          | :vp6_alpha
+          | :screen_video_v2
+          | :avc
 
   @type t :: %__MODULE__{
           frame_type: frame_type(),
@@ -38,8 +44,8 @@ defmodule ExFLV.Tag.VideoData do
   @doc """
   Parses the binary into a `VIDEODATA` tag.
   """
-  @spec parse(binary()) :: t()
-  def parse(<<frame_type::4, codec_id::4, data::binary>>) do
+  @spec parse(binary()) :: {:ok, t()}
+  def parse(<<0::1, frame_type::3, codec_id::4, data::binary>>) do
     codec = parse_codec_id(codec_id)
 
     data =
@@ -48,11 +54,12 @@ defmodule ExFLV.Tag.VideoData do
         _ -> data
       end
 
-    %__MODULE__{
-      frame_type: parse_frame_type(frame_type),
-      codec_id: codec,
-      data: data
-    }
+    {:ok,
+     %__MODULE__{
+       frame_type: parse_frame_type(frame_type),
+       codec_id: codec,
+       data: data
+     }}
   end
 
   defp parse_frame_type(1), do: :keyframe

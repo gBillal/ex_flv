@@ -22,6 +22,16 @@ defmodule ExFLV.Header do
   end
 
   @doc """
+  Parses the binary into a header struct.
+  """
+  @spec parse(binary()) :: {:ok, t()} | {:error, :invalid_header}
+  def parse(<<"FLV", version::8, 0::5, audio::1, 0::1, video::1, 0x09::32>>) do
+    {:ok, %__MODULE__{version: version, audio?: audio == 1, video?: video == 1}}
+  end
+
+  def parse(_), do: {:error, :invalid_header}
+
+  @doc """
   Serializes the header struct into a binary.
   """
   @spec serialize(t()) :: binary()
