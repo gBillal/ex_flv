@@ -3,7 +3,7 @@ defmodule ExFLV.Tag do
   Module describing an FLV tag.
   """
 
-  alias __MODULE__.{AudioData, ExVideoData, Serializer, VideoData}
+  alias __MODULE__.{AudioData, ExAudioData, ExVideoData, Serializer, VideoData}
 
   @type t :: %__MODULE__{
           type: :audio | :video | :script,
@@ -66,6 +66,7 @@ defmodule ExFLV.Tag do
   defp parse_type(18), do: {:ok, :script}
   defp parse_type(_), do: {:error, :unknown_type}
 
+  defp parse_payload(:audio, <<9::4, _rest::bitstring>> = data), do: ExAudioData.parse(data)
   defp parse_payload(:audio, data), do: AudioData.parse(data)
   defp parse_payload(:video, <<0::1, _rest::bitstring>> = data), do: VideoData.parse(data)
   defp parse_payload(:video, data), do: ExVideoData.parse(data)
