@@ -1,10 +1,13 @@
 defmodule ExFLV.TagTest do
   use ExUnit.Case, async: true
 
+  doctest ExFLV.Tag.VideoData
   doctest ExFLV.Tag.AudioData.AAC
+  doctest ExFLV.Tag.VideoData.AVC
 
   alias ExFLV.Tag.AudioData.AAC
-  alias ExFLV.Tag.{AVCVideoPacket, AudioData, VideoData}
+  alias ExFLV.Tag.{AudioData, VideoData}
+  alias ExFLV.Tag.VideoData.AVC
 
   @audio_data <<0x01, 0x02, 0x03, 0x04, 0x05>>
   @video_data <<0x01, 0x02, 0x03, 0x04, 0x05>>
@@ -25,7 +28,7 @@ defmodule ExFLV.TagTest do
   test "serialize and parse tag with video" do
     data =
       @video_data
-      |> AVCVideoPacket.new(:nalu, 0)
+      |> AVC.new(:nalu, 0)
       |> VideoData.new(:avc, :interframe)
 
     tag = %ExFLV.Tag{type: :video, timestamp: 1_000, data: data}
