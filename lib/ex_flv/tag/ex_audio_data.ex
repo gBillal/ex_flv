@@ -3,6 +3,9 @@ defmodule ExFLV.Tag.ExAudioData do
   Module describing an enhanced audio data tag.
   """
 
+  @type fourcc :: :ac3 | :eac3 | :opus | :mp3 | :flac | :aac
+  @type channel_order :: :unspecified | :native | :custom
+
   @type packet_type ::
           :sequence_start
           | :coded_frames
@@ -10,19 +13,74 @@ defmodule ExFLV.Tag.ExAudioData do
           | :multi_channel_config
           | :multi_track
           | :mod_ex
-  @type fourcc :: :ac3 | :eac3 | :opus | :mp3 | :flac | :aac
-  @type channel_order :: :unspecified | :native | :custom
+
+  @type channel ::
+          :front_left
+          | :front_right
+          | :front_center
+          | :low_frequency1
+          | :back_left
+          | :back_right
+          | :front_left_center
+          | :front_right_center
+          | :back_center
+          | :side_left
+          | :side_right
+          | :top_center
+          | :top_front_left
+          | :top_front_center
+          | :top_front_right
+          | :top_back_left
+          | :top_back_center
+          | :top_back_right
+          | :low_frequency2
+          | :top_side_left
+          | :top_side_right
+          | :bottom_front_center
+          | :bottom_front_left
+          | :bottom_front_right
+          | :unused
+          | :unknown
 
   @type t :: %__MODULE__{
           packet_type: packet_type(),
           fourcc: fourcc(),
           channel_order: channel_order() | nil,
           channel_count: non_neg_integer() | nil,
-          channel_mapping: non_neg_integer() | list(non_neg_integer()) | nil,
+          channels: list(channel()) | nil,
           data: iodata()
         }
 
-  defstruct [:packet_type, :fourcc, :channel_order, :channel_count, :channel_mapping, :data]
+  defstruct [:packet_type, :fourcc, :channel_order, :channel_count, :channels, :data]
+
+  @audio_channels %{
+    0 => :front_left,
+    1 => :front_right,
+    2 => :front_center,
+    3 => :low_frequency1,
+    4 => :back_left,
+    5 => :back_right,
+    6 => :front_left_center,
+    7 => :front_right_center,
+    8 => :back_center,
+    9 => :side_left,
+    10 => :side_right,
+    11 => :top_center,
+    12 => :top_front_left,
+    13 => :top_front_center,
+    14 => :top_front_right,
+    15 => :top_back_left,
+    16 => :top_back_center,
+    17 => :top_back_right,
+    18 => :low_frequency2,
+    19 => :top_side_left,
+    20 => :top_side_right,
+    21 => :bottom_front_center,
+    22 => :bottom_front_left,
+    23 => :bottom_front_right,
+    254 => :unused,
+    255 => :unknown
+  }
 
   @doc """
   Parses the binary into an enhanced audio data tag.
@@ -36,7 +94,7 @@ defmodule ExFLV.Tag.ExAudioData do
          fourcc: :flac,
          channel_order: :native,
          channel_count: 2,
-         channel_mapping: 3,
+         channels: [:front_left, :front_right],
          data: <<>>
        }}
 
@@ -47,7 +105,7 @@ defmodule ExFLV.Tag.ExAudioData do
          fourcc: :aac,
          channel_order: nil,
          channel_count: nil,
-         channel_mapping: nil,
+         channels: nil,
          data: <<255, 248, 89, 174, 0, 90, 78, 0>>
        }}
 
@@ -65,14 +123,14 @@ defmodule ExFLV.Tag.ExAudioData do
     channel_order = parse_channel_order(channel_order)
 
     with {:ok, fourcc} <- parse_fourcc(fourcc),
-         {:ok, mapping, rest} <- parse_channel_mapping(channel_order, channel_count, data) do
+         {:ok, channels, rest} <- parse_channels(channel_order, channel_count, data) do
       {:ok,
        %__MODULE__{
          packet_type: :multi_channel_config,
          fourcc: fourcc,
          channel_order: channel_order,
          channel_count: channel_count,
-         channel_mapping: mapping,
+         channels: channels,
          data: rest
        }}
     end
@@ -101,7 +159,7 @@ defmodule ExFLV.Tag.ExAudioData do
         fourcc: :flac,
         channel_order: :native,
         channel_count: 2,
-        channel_mapping: 3,
+        channels: [:front_left, :front_right],
         data: <<>>
       }
   """
@@ -131,13 +189,36 @@ defmodule ExFLV.Tag.ExAudioData do
   defp parse_channel_order(1), do: :native
   defp parse_channel_order(2), do: :custom
 
-  defp parse_channel_mapping(:unspecified, _count, data), do: {:ok, nil, data}
-  defp parse_channel_mapping(:native, _count, <<flags::32, data::binary>>), do: {:ok, flags, data}
+  defp parse_channels(:unspecified, _count, data), do: {:ok, nil, data}
 
-  defp parse_channel_mapping(:custom, count, data) when byte_size(data) >= count do
-    mapping = :binary.part(data, 0, count) |> :binary.bin_to_list()
-    {:ok, mapping, data}
+  defp parse_channels(:native, _count, <<flags::32, data::binary>>) do
+    channels =
+      Enum.reduce(0..31, [], fn bit, acc ->
+        case Bitwise.band(flags, Bitwise.bsl(1, bit)) do
+          0 -> acc
+          _ -> [Map.get(@audio_channels, bit) | acc]
+        end
+      end)
+
+    {:ok, Enum.reverse(channels), data}
   end
 
-  defp parse_channel_mapping(_, _count, _data), do: {:error, :invalid_data}
+  defp parse_channels(:custom, count, data) when byte_size(data) >= count do
+    <<channels_data::binary-size(count), data::binary>> = data
+
+    channels_data
+    |> :binary.bin_to_list()
+    |> Enum.reduce_while([], fn byte, acc ->
+      case Map.get(@audio_channels, byte) do
+        nil -> {:halt, {:error, "invalid channel mapping: #{byte}"}}
+        channel -> {:cont, [channel | acc]}
+      end
+    end)
+    |> case do
+      {:error, _} = error -> error
+      channels -> {:ok, Enum.reverse(channels), data}
+    end
+  end
+
+  defp parse_channels(_, _count, _data), do: {:error, :invalid_data}
 end
