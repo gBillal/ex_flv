@@ -23,6 +23,15 @@ defmodule ExFLV.Header do
 
   @doc """
   Parses the binary into a header struct.
+
+      iex> ExFLV.Header.parse(<<70, 76, 86, 1, 5, 0, 0, 0, 9>>)
+      {:ok, %ExFLV.Header{version: 1, audio?: true, video?: true}}
+
+      iex> ExFLV.Header.parse(<<70, 76, 86, 1, 0, 0, 0, 0, 9>>)
+      {:ok, %ExFLV.Header{version: 1, audio?: false, video?: false}}
+
+      iex> ExFLV.Header.parse("INVALID")
+      {:error, :invalid_header}
   """
   @spec parse(binary()) :: {:ok, t()} | {:error, :invalid_header}
   def parse(<<"FLV", version::8, 0::5, audio::1, 0::1, video::1, 0x09::32>>) do
@@ -33,6 +42,12 @@ defmodule ExFLV.Header do
 
   @doc """
   Serializes the header struct into a binary.
+
+      iex> ExFLV.Header.serialize(%ExFLV.Header{version: 1, audio?: true, video?: true})
+      <<70, 76, 86, 1, 5, 0, 0, 0, 9>>
+
+      iex> ExFLV.Header.serialize(%ExFLV.Header{version: 1, audio?: false, video?: false})
+      <<70, 76, 86, 1, 0, 0, 0, 0, 9>>
   """
   @spec serialize(t()) :: binary()
   def serialize(%__MODULE__{version: version, audio?: audio?, video?: video?}) do
