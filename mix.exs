@@ -1,7 +1,7 @@
 defmodule ExFLV.MixProject do
   use Mix.Project
 
-  @version "0.2.0"
+  @version "0.2.1"
   @github_url "https://github.com/gBillal/ex_flv"
 
   def project do
@@ -11,11 +11,11 @@ defmodule ExFLV.MixProject do
       elixir: "~> 1.18",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
-      description: "RTMP server and client implementation in Elixir",
+      description: "FLV muxer and demuxer implementation in Elixir",
       package: package(),
 
       # docs
-      name: "RTMP Server and Client",
+      name: "FLV muxer and demuxer",
       source_url: @github_url,
       docs: docs()
     ]

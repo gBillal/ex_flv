@@ -12,7 +12,7 @@ The package can be installed by adding `ex_flv` to your list of dependencies in 
 ```elixir
 def deps do
   [
-    {:ex_flv, "~> 0.2.0"}
+    {:ex_flv, "~> 0.2.1"}
   ]
 end
 ```
